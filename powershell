@@ -5,7 +5,6 @@
 read-host "Press enter to exit."
 
 
-
 #####
 # Variables in strings
 $thing = "World"
@@ -40,6 +39,7 @@ $thing = "World"
 "Hello" $thing # This on its own throws an error
 write-host "Hello" $thing # This prints Hello World
 
+
 #####
 # Regions
 # In IDEs that support Powershell (including the built in one and VSCode) you can create 'regions' that you can expand or hide
@@ -49,6 +49,7 @@ write-host "Hello" $thing # This prints Hello World
 # Do code things here
 # To end the region add a comment like below
 #endregion
+
 
 #####
 # Runspaces (aka threads)
@@ -96,7 +97,6 @@ $pool.Dispose()
 
 # Now you can use any data you assigned to a variable within the above block
 # So now I could iterate over $results and pull out data I wanted
-
 
 
 #####
@@ -149,11 +149,12 @@ Resolve-DnsName -type a $domain
 Resolve-DnsName -type mx $domain
 # and so on
 
+
 #####
 # Various RESTful API requests
 # GET, no authentication
 Invoke-RestMethod $url
-# Form based authentication
+# Form based authentication with POST
 $form = @{fields = @{}}
 $form.fields["username"] = "username"
 $form.fields["password"] = "password"
@@ -162,3 +163,96 @@ Invoke-RestMethod $url -method POST -body $form.fields
 Invoke-RestMethod $url -sessionvariable Session -method POST -body $form.fields
 # To use this same session (to keep things such as authentication tokens)
 Invoke-RestMethod $url -websession $Session
+
+
+#####
+# Ask the user a yes or no question
+# Simple yes or no in a function
+# Returns the exact text entered
+function get-input {
+    $question = "Yes or no?`n"
+    $answer = read-host $question
+    $answer = $answer.trim() # To remove any uneeded whitespace at the start or end
+    if (-not (($answer -like "yes") -or ($answer -like "no"))) {
+        write-host "Please input yes or no"
+        get-input
+    } else {
+        return $answer
+    }
+}
+
+# Simple yes or no in a function
+# Returns true or false
+function get-input {
+    $question = "Yes or no?`n"
+    $answer = read-host $question
+    $answer = $answer.trim() # To remove any uneeded whitespace at the start or end
+    if ($answer -like "yes") {
+        return $true
+    } if ($answer -like "no") {
+        return $false
+    } else {
+        write-host "Please input yes or no"
+    }
+}
+
+# Simple yes or no outside a function
+# Value of $answer is what the user entered
+$continue = $false
+$question = "Yes or no?"
+while (-not $continue) {
+    $answer = read-host $question
+    $answer = $answer.trim()
+    if (($answer -like "yes") -or ($answer -like "no")) {
+        $continue = $true # THIS IS VERY IMPORTANT, if you do not set this you'll be in an infinite loop
+    } else {
+        write-host "Please input yes or no"
+        # Since $continue is still false it will repeat the loop
+    }
+}
+
+# Simple yes or no outside a function
+# Value of $answer is a bool
+$continue = $false
+$question = "Yes or no?"
+while (-not $continue) {
+    $answer = read-host $question
+    $answer = $answer.trim()
+    if ($answer -like "yes") {
+        $answer = $true
+        $continue = $true
+    } elseif ($answer -like "no") {
+        $answer = $false
+        $continue = $true # THIS IS VERY IMPORTANT, if you do not set this you'll be in an infinite loop
+    } else {
+        write-host "Please input yes or no"
+        # Since $continue is still false it will repeat the loop
+    }
+}
+
+# This uses regex to verify the user has entered in 'y', 'yes', 'n', 'no', 'h' or 'help'
+# If the user asked for help, it returns a help string and asks again
+# Otherwise returns a bool
+function get-input {
+    $question = "Yes or no?`n"
+    $answer = read-host $question
+    $answer = $answer.trim() # Removes whitespace from beginning or end
+    $valid_answer_regex = '^(Yes|yes|y|Y)|(No|no|n|N)|(Help|help|h|H)$'
+    $yes_regex = '^(Yes|yes|Y|y)$'
+    $no_regex = '^(No|no|N|n)$'
+    $help_regex = '^(Help|help|h|H)$'
+    if (-not ($answer -match $valid_answer_regex)) {
+        write-host "Please input Yes or No`n"
+        get-input
+    } elseif ($answer -match $help_regex) {
+        write-host "Help things go here"
+        get-input
+    } elseif ($answer -match $yes_regex) {
+        return $true
+    } elseif ($answer -match $no_regex) {
+        return $false
+    } else { # Theoretically we should never get here, but it's best to plan for it anyways
+        write-host "Please input yes or no"
+        get-input
+    }
+}
