@@ -1,0 +1,164 @@
+#####
+# Don't close the window automatically
+# I was annoyed that when a script was finished it would autmatcially close the window
+# Now the user has to press enter to close it
+read-host "Press enter to exit."
+
+
+
+#####
+# Variables in strings
+$thing = "World"
+"Hello" + $thing
+# Result: HelloWorld
+$thing = "World"
+"Hello $thing"
+# Result: Hello World
+$thing = "World"
+'Hello $thing'
+# Result: Hello $thing
+$thing = "World"
+@"
+Hello $thing
+A
+"@
+# Result: Hello World on one line, A on a new line
+$thing = "World"
+"Hello $thing`nA"
+# Result: Hello World on one line, A on a new line
+
+
+#####
+# Printing something to the console
+# If you leave something alone on a line that isn't a function, Powershell will assume you want to print it to the console
+# If you want to explicitely tell it to print something, use write-host
+"Hello world"
+write-host "Hello world"
+# The above two would both print "Hello world" to the console
+# Normally there is no difference, however sometimes you need to use write-host
+$thing = "World"
+"Hello" $thing # This on its own throws an error
+write-host "Hello" $thing # This prints Hello World
+
+#####
+# Regions
+# In IDEs that support Powershell (including the built in one and VSCode) you can create 'regions' that you can expand or hide
+# At the beginning of the region create a comment like below
+
+#region LABEL HERE
+# Do code things here
+# To end the region add a comment like below
+#endregion
+
+#####
+# Runspaces (aka threads)
+#region Set up runspaces
+$pool = [RunspaceFactory]::CreateRunspacePool(1, [int]$env:NUMBER_OF_PROCESSORS + 1)
+$pool.ApartmentState = "MTA"
+$pool.Open()
+$runspaces = @()
+#endregion
+
+#region Main script
+$scriptblock = {
+    param($param) # If inputs are needed
+    # What you want each thread to do
+}
+#endregion
+
+#region Run runspaces
+foreach ($entry in $array) {
+    $runspace = [PowerShell]::Create()
+    $null = $runspace.AddScript($scriptblock)
+    $null = $runspace.AddArgument($entry) # If inputs are needed
+    $runspace.RunspacePool = $pool
+    $runspaces += [PSCustomObject]@{ Pipe = $runspace; Status = $runspace.BeginInvoke(); Other = $entry } # 'Other' and its value are completely optional can be anything you want. My original script added the IP it was currently scanning here
+}
+#endregion
+
+#region Stop runspaces and clean up
+$results = @()
+while ($runspaces.Status -ne $null)
+{
+    $completed = $runspaces | Where-Object { $_.Status.IsCompleted -eq $true }
+    foreach ($runspace in $completed)
+    {
+        $output = $runspace.Pipe.EndInvoke($runspace.Status)
+        $runspace.Status = $null
+        # If you want to keep any data, make sure to save it here
+        # This is user defined
+        $results += @{Other=$runspace.Other;raw=$output}
+    }
+}
+$pool.Close()
+$pool.Dispose()
+#endregion
+
+# Now you can use any data you assigned to a variable within the above block
+# So now I could iterate over $results and pull out data I wanted
+
+
+
+#####
+# Send SSH commands and receive response (must close connection to receive response)
+# @" ... "@ means a literal string in Powershell
+# Every enter here is an enter sent to the receiving device
+@"
+
+ssh 
+commands 
+here
+ 
+exit
+"@ | & plink -ssh $user@$ip -pw HERE-IF-NEEDED # If the password is not needed, remove -pw
+
+
+#####
+# Allow sending requests to websites with self-signed certs:
+# I got this from StackOverflow, unfortunately I do not have the exact link
+#region Needed for self-signed certificates
+if (-not("dummy" -as [type])) {
+    add-type -TypeDefinition @"
+using System;
+using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
+
+public static class Dummy {
+    public static bool ReturnTrue(object sender,
+        X509Certificate certificate,
+        X509Chain chain,
+        SslPolicyErrors sslPolicyErrors) { return true; }
+
+    public static RemoteCertificateValidationCallback GetDelegate() {
+        return new RemoteCertificateValidationCallback(Dummy.ReturnTrue);
+    }
+}
+"@
+}
+
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = [dummy]::GetDelegate()
+#endregion
+
+
+#####
+# Various DNS requests
+# Get A records
+Resolve-DnsName -type a $domain
+# MX
+Resolve-DnsName -type mx $domain
+# and so on
+
+#####
+# Various RESTful API requests
+# GET, no authentication
+Invoke-RestMethod $url
+# Form based authentication
+$form = @{fields = @{}}
+$form.fields["username"] = "username"
+$form.fields["password"] = "password"
+Invoke-RestMethod $url -method POST -body $form.fields
+# Save the session to use info such as authentication tokens in future requests (this example uses form based authentication, it doesn't have to be)
+Invoke-RestMethod $url -sessionvariable Session -method POST -body $form.fields
+# To use this same session (to keep things such as authentication tokens)
+Invoke-RestMethod $url -websession $Session
