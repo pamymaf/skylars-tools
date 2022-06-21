@@ -2,3 +2,5 @@ This is a collection of tools or code snippits I've used in various projects. I 
 
 Contents:
 regex - Useful regex filters with regexr.com links
+powershell - Useful Powershell snippits
+git - Useful git commands

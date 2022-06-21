@@ -1,0 +1,38 @@
+# Initialize (create) a new repository
+cd your-repository
+git init
+
+# Copy and download a local repository
+git clone path/to/repo
+
+# Copy and download a repository from Github via HTTPS
+git clone https://github.com/pamymaf/skylars-tools
+
+# Copy and download a repository from Github via SSH
+git clone git@github.com:pamymaf/skylars-tools.git
+
+# Add changes to staging area
+git add . # For all files
+git add file-name # For specific files
+git add file-one file-two # For multiple files
+
+# View staged and unstaged changed files
+git status
+
+# Commit your changes
+git commit -m "MESSAGE HERE"
+# If you do not include -m and your message, your computer will try to open a text editor. Write your comment, save the file, then close the file
+
+# Push your changes to the original version you copied
+git push
+
+# Make a new branch so you can make changes without changing prod
+git branch branch-name
+
+# Switch to another branch to make changes
+git checkout branch-name
+
+# Merge the new branch into the main one
+# Note: some repositories have master as a main branch name, I use main
+git checkout main
+git merge branch-name
