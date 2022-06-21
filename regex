@@ -1,0 +1,25 @@
+These are designed to match an entire string. If you want to match someting in the middle of a string remove the `^` and `$`
+
+Phone numbers:
+^(\+1)?[-\s\.]?\(?\d{3}\)?[-\s\.]?\d{3}[-\s\.]?\d{4}$
+Matches strings that match the below (with or without a +1 at the beginning)
+5556661234
+555 666 1234
+555.666.1234
+555-666-1234
+555 666-1234
+(555) 666 1234
+(555).666.1234
+555.666-1234
+and more
+https://regexr.com/6c5er
+
+
+MAC addresses:
+^(?:[0-9 a-f A-F]{2}[\s:\.-]?){5}[0-9 a-f A-F]{2}$
+Matches the below formats
+123456789012
+12 34 56 78 90 12
+12-34-56-78-90-12
+12.34.56.78.90.12
+https://regexr.com/6o4nj
